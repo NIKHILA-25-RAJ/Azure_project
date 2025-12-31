@@ -1,0 +1,41 @@
+storage_account = "storage account name"
+client_id = "<client-id>"
+client_secret = "<client-secret>"
+tenant_id = "<tenant-id>"
+
+spark.conf.set(f"fs.azure.account.auth.type.{storage_account}.dfs.core.windows.net", "OAuth")
+spark.conf.set(
+    f"fs.azure.account.oauth.provider.type.{storage_account}.dfs.core.windows.net",
+    "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider"
+)
+spark.conf.set(
+    f"fs.azure.account.oauth2.client.id.{storage_account}.dfs.core.windows.net",
+    client_id
+)
+spark.conf.set(
+    f"fs.azure.account.oauth2.client.secret.{storage_account}.dfs.core.windows.net",
+    client_secret
+)
+spark.conf.set(
+    f"fs.azure.account.oauth2.client.endpoint.{storage_account}.dfs.core.windows.net",
+    f"https://login.microsoftonline.com/{tenant_id}/oauth2/token"
+)
+from pyspark.sql.functions import col
+
+raw_path = "your raw path"
+ingested_path = "your ingested path"
+
+df_raw = spark.read.json(raw_path)
+
+df_transformed = df_raw.select(
+    col("id").alias("coin_id"),
+    col("name"),
+    col("current_price").alias("price_in_inr"),
+    col("market_cap"),
+    col("total_volume"),        
+    col("price_change_percentage_24h")
+)
+
+df_transformed.write.mode("overwrite").csv(ingested_path)
+
+display(df_transformed)
